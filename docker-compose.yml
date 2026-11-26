@@ -1,0 +1,14 @@
+services:
+  cartsense:
+    build: .
+    image: cartsense:local
+    ports: ["8000:8000"]
+    volumes: [cartsense-data:/data]
+    mem_limit: 256m
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request;urllib.request.urlopen('http://127.0.0.1:8000/healthz')"]
+      interval: 15s
+      timeout: 3s
+
+volumes:
+  cartsense-data:

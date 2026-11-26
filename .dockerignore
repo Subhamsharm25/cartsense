@@ -1,0 +1,14 @@
+.git
+.venv
+__pycache__
+*.db
+.pytest_cache
+.ruff_cache
+.trivy-cache
+reports
+tests
+deploy
+.github
+Jenkinsfile
+docker-compose.yml
+ci.py

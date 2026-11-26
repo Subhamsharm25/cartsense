@@ -1,0 +1,52 @@
+# Single-replica deployment (SQLite is one file on one volume, so exactly one writer).
+# kubectl apply -f deploy/kubernetes.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata: { name: cartsense }
+data:
+  CARTSENSE_DB: "/data/cartsense.db"
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata: { name: cartsense-data }
+spec:
+  accessModes: [ReadWriteOnce]
+  resources: { requests: { storage: 1Gi } }
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata: { name: cartsense, labels: { app: cartsense } }
+spec:
+  replicas: 1
+  strategy: { type: Recreate }   # never two writers on the same SQLite file
+  selector: { matchLabels: { app: cartsense } }
+  template:
+    metadata: { labels: { app: cartsense } }
+    spec:
+      securityContext: { runAsNonRoot: true, runAsUser: 10001, fsGroup: 10001, seccompProfile: { type: RuntimeDefault } }
+      containers:
+        - name: cartsense
+          image: cartsense:local
+          imagePullPolicy: IfNotPresent
+          ports: [{ name: http, containerPort: 8000 }]
+          envFrom:
+            - configMapRef: { name: cartsense }
+          readinessProbe: { httpGet: { path: /healthz, port: http }, periodSeconds: 5 }
+          livenessProbe: { httpGet: { path: /healthz, port: http }, periodSeconds: 15 }
+          resources: { requests: { cpu: 20m, memory: 64Mi }, limits: { cpu: 500m, memory: 256Mi } }
+          securityContext: { allowPrivilegeEscalation: false, readOnlyRootFilesystem: true, capabilities: { drop: [ALL] } }
+          volumeMounts:
+            - { name: data, mountPath: /data }
+            - { name: tmp, mountPath: /tmp }
+      volumes:
+        - name: data
+          persistentVolumeClaim: { claimName: cartsense-data }
+        - name: tmp
+          emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata: { name: cartsense }
+spec:
+  selector: { app: cartsense }
+  ports: [{ name: http, port: 80, targetPort: http }]

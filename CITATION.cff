@@ -1,0 +1,9 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+title: "cartsense: an interpretable 'human sense' recommendation engine for quick commerce"
+authors:
+  - family-names: "Sharma"
+    given-names: "Subham"
+year: 2026
+url: "https://github.com/Subhamsharm25/cartsense"
+license: MIT
